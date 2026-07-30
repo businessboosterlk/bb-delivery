@@ -137,19 +137,29 @@ var KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6In
 var PIN="2470";
 
 var COLS=[
- {k:'posts',   grp:'THIS MONTH', t:'Posts'},
- {k:'shorts',  grp:'THIS MONTH', t:'Short videos'},
- {k:'vids',    grp:'THIS MONTH', t:'Published videos'},
- {k:'stories', grp:'THIS MONTH', t:'Stories'},
- {k:'scripts', grp:'THIS MONTH', t:'Scripts sent'},
- {k:'ads',     grp:'THIS MONTH', t:'Ads live'},
- {k:'report',  grp:'THIS MONTH', t:'Report sent'},
- {k:'plan',    grp:'NEXT MONTH', t:'Content plan'},
- {k:'approved',grp:'NEXT MONTH', t:'Plan approved'},
- {k:'nposts',  grp:'NEXT MONTH', t:'Posts made'},
- {k:'fb',      grp:'BRAND',      t:'FB cover'},
- {k:'ig',      grp:'BRAND',      t:'IG highlights'}
+ {k:'posts',   g:'this', t:'Posts'},
+ {k:'shorts',  g:'this', t:'Short videos'},
+ {k:'vids',    g:'this', t:'Published videos'},
+ {k:'stories', g:'this', t:'Stories'},
+ {k:'scripts', g:'this', t:'Scripts sent'},
+ {k:'ads',     g:'this', t:'Ads live'},
+ {k:'report',  g:'this', t:'Report sent'},
+ {k:'plan',    g:'next', t:'Content plan'},
+ {k:'approved',g:'next', t:'Plan approved'},
+ {k:'nposts',  g:'next', t:'Posts made'},
+ {k:'bio',     g:'bio',  t:'BIOTHIS'},
+ {k:'nbio',    g:'bio',  t:'BIONEXT'},
+ {k:'fb',      g:'one',  t:'FB cover'},
+ {k:'ig',      g:'one',  t:'IG highlights'}
 ];
+// Group and column headers carry the REAL month name taken from the period label,
+// so nobody has to work out what "this month" meant on a printed copy.
+var MONTHS_=['January','February','March','April','May','June','July','August','September','October','November','December'];
+function thisMonthName(){var m=String(period||'').split(' ')[0];return MONTHS_.indexOf(m)>=0?m:'This month';}
+function nextMonthName(){var p=String(period||'').split(' ');var i=MONTHS_.indexOf(p[0]);if(i<0)return 'Next month';
+  var y=parseInt(p[1]||'0',10);i++;if(i>11){i=0;y++;}return MONTHS_[i];}
+function colLabel(c){return c.t==='BIOTHIS'?thisMonthName():c.t==='BIONEXT'?nextMonthName():c.t;}
+function groupLabel(g){return g==='this'?thisMonthName().toUpperCase():g==='next'?nextMonthName().toUpperCase():g==='bio'?'BIO':'ONE-TIME';}
 
 var rows=[], periods=[], period="July 2026", timer=null;
 
@@ -200,8 +210,10 @@ function patch(id,body){
 }
 
 function render(){
+  var lastG=null;
   document.getElementById('head').innerHTML='<th class="cli">CLIENT</th><th style="min-width:66px">OWNER</th>'+
-    COLS.map(function(c){return '<th><span class="grp">'+c.grp+'</span>'+c.t.toUpperCase()+'</th>'}).join('')+
+    COLS.map(function(c){var isNew=c.g!==lastG;lastG=c.g;
+      return '<th'+(isNew?' style="border-left:2px solid rgba(255,255,255,.22)"':'')+'><span class="grp">'+(isNew?groupLabel(c.g):'&nbsp;')+'</span>'+colLabel(c).toUpperCase()+'</th>'}).join('')+
     '<th style="min-width:46px">DONE</th>';
 
   document.getElementById('body').innerHTML=rows.map(function(r,i){
@@ -268,7 +280,7 @@ function nextLabel(){
   if(i<0)return period; i++; if(i>11){i=0;y++;} return m[i]+' '+y;
 }
 function exportCSV(){
-  var L=['Client,Owner,'+COLS.map(function(c){return c.grp+' '+c.t}).join(',')+',Percent'];
+  var L=['Client,Owner,'+COLS.map(function(c){return groupLabel(c.g)+' '+colLabel(c)}).join(',')+',Percent'];
   rows.forEach(function(r){var v=r.vals||{};var d=COLS.filter(function(c){return v[c.k]}).length;
     L.push('"'+r.client+'","'+(r.owner||'')+'",'+COLS.map(function(c){return v[c.k]?'DONE':''}).join(',')+
       ','+Math.round(d/COLS.length*100)+'%')});
