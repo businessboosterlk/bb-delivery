@@ -2,16 +2,26 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="robots" content="noindex,nofollow">
-<meta name="theme-color" content="#14324A">
+<meta name="theme-color" content="#EEF2F6">
 <title>BB Delivery Tracker</title>
 <style>
-:root{--ink:#16202B;--muted:#6B7887;--line:#E3E9EF;--soft:#F6F9FC;--navy:#14324A;
+:root{
+/* ── BB APP SHELL: the phone reports its own insets, we never guess a model ── */
+--sat:env(safe-area-inset-top,0px);
+--sab:env(safe-area-inset-bottom,0px);--ink:#16202B;--muted:#6B7887;--line:#E3E9EF;--soft:#F6F9FC;--navy:#14324A;
 --cyan:#1596D6;--green:#1E9E63;--amber:#E0A11B;--red:#D0574A;--card:#FFF;--bg:#EEF2F6}
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--ink);font-size:14px;line-height:1.4;
 font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif}
+/* the strip behind the clock and the battery. In standalone the page owns it,
+   so the page has to paint it or the content shows through. */
+.statusfill{position:fixed;top:0;left:0;right:0;height:var(--sat);z-index:60;pointer-events:none}
 .wrap{max-width:1520px;margin:0 auto;padding:20px 16px 60px}
 
 /* gate */
@@ -89,9 +99,14 @@ tfoot td.cli{text-align:left;padding-left:13px;position:sticky;left:0}
  tbody tr:nth-child(even) td{background:#F6F9FC!important;-webkit-print-color-adjust:exact}
  @page{size:A4 landscape;margin:8mm}
 }
+
+/* guard L-004: iOS inflates text without this and content is pushed
+   past the right edge, where overflow:hidden makes it unreachable. */
+html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
 </style>
 </head>
 <body>
+<div class="statusfill" aria-hidden="true"></div>
 
 <div id="gate"><div class="card" id="gcard">
   <h2>Delivery Tracker</h2>
@@ -288,6 +303,18 @@ function exportCSV(){
   a.href=URL.createObjectURL(b);a.download='BB-Delivery-'+period.replace(/\s+/g,'-')+'.csv';a.click();
 }
 function esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;')}
+</script>
+
+<script>
+/* The shell tool copies a service worker and never registers it, so the app
+   installs and the worker never runs. Register it here. Network-first, and it
+   never caches the database: a stale board is worse than no board, because
+   somebody acts on work that has already moved on. */
+if('serviceWorker' in navigator){
+  window.addEventListener('load',function(){
+    navigator.serviceWorker.register('./sw.js').catch(function(){});
+  });
+}
 </script>
 </body>
 </html>
